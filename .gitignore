@@ -1,0 +1,12 @@
+## .NET Core
+bin/
+obj/
+*.db
+appsettings.Development.json
+
+## VS Code
+.vscode/
+*.code-workspace
+
+## macOS
+.DS_Store

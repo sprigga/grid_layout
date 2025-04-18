@@ -1,0 +1,42 @@
+@model List<Grid>
+@{
+    ViewData["Title"] = "網格管理";
+}
+
+<div class="container">
+    <h2>網格管理系統</h2>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="gridWidth">寬度:</label>
+                <input type="number" id="gridWidth" class="form-control" value="100" min="10" max="500" />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="gridHeight">高度:</label>
+                <input type="number" id="gridHeight" class="form-control" value="100" min="10" max="500" />
+            </div>
+        </div>
+    </div>
+    
+    <button id="addGridBtn" class="btn btn-primary mb-3">添加方格</button>
+    
+    <div id="background-container" style="position: relative; width: 100%; height: 600px; background-image: url('/media/background_map.jpg'); background-size: cover; border: 1px solid #ccc;">
+        <!-- 方格將在JavaScript中動態添加到這裡 -->
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="~/js/grid-manager.js"></script>
+    <script>
+        // 初始化已保存的網格
+        $(document).ready(function() {
+            var savedGrids = @Html.Raw(Json.Serialize(Model));
+            initializeGrids(savedGrids);
+        });
+    </script>
+}
