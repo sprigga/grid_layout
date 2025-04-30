@@ -32,7 +32,11 @@
         let grids = [];
 
         function createGrid(x = 0, y = 0, width = 100, height = 100) {
-            const grid = $(`<div class='grid-item' id='grid-${gridCounter}'></div>`);
+            const grid = $(`
+                <div class='grid-item' id='grid-${gridCounter}'>
+                    <button class="btn btn-sm btn-danger grid-delete-btn" style="position:absolute;top:2px;right:2px;z-index:20;padding:0 4px;">×</button>
+                </div>
+            `);
             grid.css({
                 position: 'absolute',
                 left: x,
@@ -113,6 +117,20 @@
                         </li>
                     `);
                 });
+
+                // 自動載入最新版本（第一個）
+                if (data.length > 0) {
+                    const latestId = data[0].id;
+                    $('#version-selector').val(latestId);
+                    $.get(`/Layout/Load?versionId=${latestId}`, function (layout) {
+                        $("#background").find('.grid-item').remove();
+                        grids = [];
+                        gridCounter = 0;
+                        layout.forEach(item => {
+                            createGrid(item.x, item.y, item.width, item.height);
+                        });
+                    });
+                }
             });
         }
 
@@ -158,6 +176,15 @@
                 grids = [];
                 gridCounter = 0;
             });
+        });
+
+        $(document).on('click', '.grid-delete-btn', function (e) {
+            e.stopPropagation();
+            const gridDiv = $(this).closest('.grid-item');
+            // 從 DOM 移除
+            gridDiv.remove();
+            // 從 grids 陣列移除
+            grids = grids.filter(g => g[0] !== gridDiv[0]);
         });
 
         // 載入頁面時就去撈所有版本

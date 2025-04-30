@@ -156,3 +156,4 @@
 /Users/pololin/Desktop/Csharp/GridLayoutEditor/obj/Debug/net8.0/GridLayoutEditor.pdb
 /Users/pololin/Desktop/Csharp/GridLayoutEditor/obj/Debug/net8.0/GridLayoutEditor.genruntimeconfig.cache
 /Users/pololin/Desktop/Csharp/GridLayoutEditor/obj/Debug/net8.0/ref/GridLayoutEditor.dll
+/Users/pololin/Desktop/Csharp/GridLayoutEditor/obj/Debug/net8.0/GridLayoutEditor.sourcelink.json
