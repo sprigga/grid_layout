@@ -1,0 +1,180 @@
+@{
+    ViewData["Title"] = "Grid Layout Manager";
+}
+
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<div class="card shadow mb-4" style="width: 1020px;">
+    <div class="card-body p-3" style="background: #f8f9fa;">
+        <div id="background"
+            style="position:relative; width:1000px; height:480px; background-image:url('/images/background_map.jpg'); background-size:cover; border-radius: 8px; border: 1px solid #dee2e6;">
+        </div>
+    </div>
+</div>
+
+<div class="mb-3">
+    <button id="add-grid" class="btn btn-primary me-2">新增方格</button>
+    <button id="save-layout" class="btn btn-success me-4">儲存 Layout</button>
+    <select id="version-selector" class="form-select d-inline-block w-auto me-2" style="min-width:220px;">
+        <option value="">--請選擇版本--</option>
+    </select>
+    <button id="load-version" class="btn btn-info me-2">載入選定版本</button>
+</div>
+<ul id="version-list" class="list-group mb-3"></ul>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+
+    <script>
+        let gridCounter = 0;
+        let grids = [];
+
+        function createGrid(x = 0, y = 0, width = 100, height = 100) {
+            const grid = $(`<div class='grid-item' id='grid-${gridCounter}'></div>`);
+            grid.css({
+                position: 'absolute',
+                left: x,
+                top: y,
+                width: width,
+                height: height,
+                border: '2px solid red',
+                backgroundColor: 'rgba(255,0,0,0.2)'
+            });
+
+            grid.draggable({
+                containment: "#background",
+                stop: checkOverlap
+            }).resizable({
+                containment: "#background",
+                stop: checkOverlap
+            });
+
+            $("#background").append(grid);
+            grids.push(grid);
+            gridCounter++;
+        }
+
+        $("#add-grid").click(function () {
+            createGrid();
+        });
+
+        $("#save-layout").click(function () {
+            let layoutData = grids.map(grid => {
+                return {
+                    x: grid.position().left,
+                    y: grid.position().top,
+                    width: grid.width(),
+                    height: grid.height()
+                };
+            });
+
+            $.ajax({
+                url: '/Layout/Save',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(layoutData),
+                success: function () {
+                    alert('儲存成功');
+                    loadVersions(); // 儲存成功後即時更新版本選單
+                }
+            });
+        });
+
+        function checkOverlap(event, ui) {
+            let current = $(this);
+            let pos = current.offset();
+            let width = current.width();
+            let height = current.height();
+
+            grids.forEach(g => {
+                if (g[0] !== current[0]) {
+                    let gPos = g.offset();
+                    if (!(pos.left + width < gPos.left || gPos.left + g.width() < pos.left || pos.top + height < gPos.top || gPos.top + g.height() < pos.top)) {
+                        alert('方格重疊，請重新移動');
+                        current.css('left', ui.originalPosition.left);
+                        current.css('top', ui.originalPosition.top);
+                    }
+                }
+            });
+        }
+
+        function loadVersions() {
+            $.get('/Layout/GetVersions', function (data) {
+                $('#version-selector').empty().append('<option value="">--請選擇版本--</option>');
+                $('#version-list').empty();
+                data.forEach(v => {
+                    $('#version-selector').append(`<option value="${v.id}">${v.versionName} (${v.createdAt})</option>`);
+                    $('#version-list').append(`
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>${v.versionName} (${v.createdAt})</span>
+                            <button class="btn btn-danger btn-sm delete-version" data-id="${v.id}">刪除</button>
+                        </li>
+                    `);
+                });
+            });
+        }
+
+        $("#load-version").click(function () {
+            const versionId = $("#version-selector").val();
+            if (!versionId) {
+                alert("請選擇一個版本！");
+                return;
+            }
+
+            $.get(`/Layout/Load?versionId=${versionId}`, function (data) {
+                $("#background").find('.grid-item').remove(); // 移除現有所有方格
+                grids = [];
+                gridCounter = 0;
+
+                data.forEach(item => {
+                    createGrid(item.x, item.y, item.width, item.height);
+                });
+            });
+        });
+
+        $("#version-selector").change(function () {
+            const versionId = $(this).val();
+            if (!versionId) return;
+
+            $.get(`/Layout/Load?versionId=${versionId}`, function (data) {
+                $("#background").find('.grid-item').remove(); // 移除現有所有方格
+                grids = [];
+                gridCounter = 0;
+
+                data.forEach(item => {
+                    createGrid(item.x, item.y, item.width, item.height);
+                });
+            });
+        });
+
+        $(document).on('click', '.delete-version', function () {
+            if (!confirm('確定要刪除此版本？')) return;
+            const id = $(this).data('id');
+            $.post('/Layout/DeleteVersion', { id }, function () {
+                loadVersions();
+                $("#background").find('.grid-item').remove();
+                grids = [];
+                gridCounter = 0;
+            });
+        });
+
+        // 載入頁面時就去撈所有版本
+        $(document).ready(function () {
+            loadVersions();
+        });
+    </script>
+    <style>
+        .grid-item {
+            transition: box-shadow 0.2s;
+        }
+        .grid-item:active, .grid-item.ui-draggable-dragging {
+            box-shadow: 0 0 10px #007bff;
+            z-index: 10;
+        }
+        #background {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+    </style>
+}

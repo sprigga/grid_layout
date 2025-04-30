@@ -1,0 +1,102 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using GridLayoutEditor.Data;
+using GridLayoutEditor.Models;
+
+namespace GridLayoutManager.Controllers
+{
+    public class LayoutController : Controller
+    {
+        private readonly ApplicationDbContext _context;
+
+        public LayoutController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Save([FromBody] List<GridItemDto> grids)
+        {
+            // TODO: 假設UserId固定為1 (之後可以接Identity或登入系統)
+            int userId = 1;
+
+            var layoutVersion = new LayoutVersion
+            {
+                VersionName = $"Version_{DateTime.Now:yyyyMMdd_HHmmss}",
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                GridItems = grids.Select(g => new GridItem
+                {
+                    X = g.X,
+                    Y = g.Y,
+                    Width = g.Width,
+                    Height = g.Height
+                }).ToList()
+            };
+
+            _context.LayoutVersions.Add(layoutVersion);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetVersions()
+        {
+            int userId = 1; // 假設固定userId，之後可搭配登入系統
+            var versions = await _context.LayoutVersions
+                .Where(v => v.UserId == userId)
+                .OrderByDescending(v => v.CreatedAt)
+                .Select(v => new
+                {
+                    v.Id,
+                    v.VersionName,
+                    CreatedAt = v.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                })
+                .ToListAsync();
+
+            return Json(versions);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Load(int versionId)
+        {
+            var grids = await _context.GridItems
+                .Where(g => g.LayoutVersionId == versionId)
+                .Select(g => new { g.X, g.Y, g.Width, g.Height })
+                .ToListAsync();
+
+            return Json(grids);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteVersion(int id)
+        {
+            var version = await _context.LayoutVersions
+                .Include(v => v.GridItems)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+            if (version == null)
+                return NotFound();
+
+            _context.GridItems.RemoveRange(version.GridItems);
+            _context.LayoutVersions.Remove(version);
+            await _context.SaveChangesAsync();
+
+            return Ok();
+        }
+    }
+
+    public class GridItemDto
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+}
