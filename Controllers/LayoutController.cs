@@ -2,16 +2,21 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GridLayoutEditor.Data;
 using GridLayoutEditor.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
-namespace GridLayoutManager.Controllers
+namespace GridLayoutEditor.Controllers
 {
+    [Authorize]
     public class LayoutController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public LayoutController(ApplicationDbContext context)
+        public LayoutController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         public IActionResult Index()
@@ -22,8 +27,9 @@ namespace GridLayoutManager.Controllers
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] List<GridItemDto> grids)
         {
-            // TODO: 假設UserId固定為1 (之後可以接Identity或登入系統)
-            int userId = 1;
+            string? userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
 
             var layoutVersion = new LayoutVersion
             {
@@ -48,7 +54,10 @@ namespace GridLayoutManager.Controllers
         [HttpGet]
         public async Task<IActionResult> GetVersions()
         {
-            int userId = 1; // 假設固定userId，之後可搭配登入系統
+            string? userId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
             var versions = await _context.LayoutVersions
                 .Where(v => v.UserId == userId)
                 .OrderByDescending(v => v.CreatedAt)

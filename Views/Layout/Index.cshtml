@@ -31,7 +31,42 @@
         let gridCounter = 0;
         let grids = [];
 
-        function createGrid(x = 0, y = 0, width = 100, height = 100) {
+        function isOverlap(x, y, width, height) {
+            for (let g of grids) {
+                let gx = g.position().left;
+                let gy = g.position().top;
+                let gw = g.width();
+                let gh = g.height();
+                if (!(x + width <= gx || gx + gw <= x || y + height <= gy || gy + gh <= y)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function findEmptyPosition(width = 100, height = 100) {
+            const maxW = 1000, maxH = 480;
+            const step = 10;
+            for (let y = 0; y <= maxH - height; y += step) {
+                for (let x = 0; x <= maxW - width; x += step) {
+                    if (!isOverlap(x, y, width, height)) {
+                        return { x, y };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function createGrid(x = null, y = null, width = 100, height = 100) {
+            if (x === null || y === null) {
+                const pos = findEmptyPosition(width, height);
+                if (!pos) {
+                    alert('沒有足夠空間新增方格');
+                    return;
+                }
+                x = pos.x;
+                y = pos.y;
+            }
             const grid = $(`
                 <div class='grid-item' id='grid-${gridCounter}'>
                     <button class="btn btn-sm btn-danger grid-delete-btn" style="position:absolute;top:2px;right:2px;z-index:20;padding:0 4px;">×</button>
