@@ -64,6 +64,10 @@ The application will start by default at `http://localhost:5154` or `https://loc
 - **Load/Switch Version**: Select a version to load its layout, or delete a version (only versions created by the user).
 - **Auto Load Latest Version**: Automatically loads the latest layout version for the currently logged-in user when the page loads.
 
+## Author
+
+- Lin Hung Chuan
+
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details (if available).
